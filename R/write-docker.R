@@ -95,7 +95,20 @@ vetiver_write_docker <- function(vetiver_model,
 
 docker_pkgs <- c("pins", "plumber", "rapidoc", "vetiver", "renv")
 
-glue_sys_reqs <- function(pkgs) {
+#' Generate the Docker command required to install system dependencies for given packages
+#'
+#' @param pkgs A character vector of packages for which system dependencies are
+#'   to be determined.
+#' @param distribution Linux distribution for which the packages will be
+#'   installed. This affects both the system dependencies, and the installation
+#'   command. Currently only "ubuntu" and "centos" are supported.
+#' @param release The release of the Linux distribution, eg. "20.04" for
+#'   Ubuntu Focal Fossa or "7" for CentOS 7.
+#'
+#' @return A character string which comprises a "RUN" command for a Dockerfile
+#'
+#' @keywords internal
+glue_sys_reqs <- function(pkgs, distribution = "ubuntu", release = "20.04") {
     rlang::check_installed("curl")
     rspm <- Sys.getenv("RSPM_ROOT", DEFAULT_RSPM)
     rspm_repo_id <- Sys.getenv("RSPM_REPO_ID", DEFAULT_RSPM_REPO_ID)
@@ -105,7 +118,7 @@ glue_sys_reqs <- function(pkgs) {
 
     req_url <- glue(
         "{rspm_repo_url}/sysreqs?all=false",
-        "&pkgname={pkgnames}&distribution=ubuntu&release=20.04"
+        "&pkgname={pkgnames}&distribution={tolower(distribution)}&release={release}"
     )
     res <- curl::curl_fetch_memory(req_url)
     sys_reqs <- jsonlite::fromJSON(rawToChar(res$content), simplifyVector = FALSE)
@@ -115,12 +128,28 @@ glue_sys_reqs <- function(pkgs) {
     sys_reqs <- map(sys_reqs$requirements, pluck, "requirements", "packages")
     sys_reqs <- sort(unique(map_chr(sys_reqs, 1L)))
     sys_reqs <- glue_collapse(sys_reqs, sep = " \\\n  ")
-    glue(
-        "RUN apt-get update -qq && ",
-        "apt-get install -y --no-install-recommends \\\n  ",
-        sys_reqs,
-        "\n",
-        .trim = FALSE
-    )
+
+    if (tolower(distribution) == "ubuntu") {
+        glue(
+            "RUN apt-get update -qq && ",
+            "apt-get install -y --no-install-recommends \\\n  ",
+            sys_reqs,
+            "\n",
+            .trim = FALSE
+        )
+    } else if (tolower(distribution) == "centos") {
+        glue(
+            "RUN yum update -y && ",
+            "yum install -y \\\n  ",
+            sys_reqs,
+            " && \\\n",
+            "  yum clean all",
+            "\n",
+            .trim = FALSE
+        )
+    } else {
+        stop("Dockerfile creation is not yet supported for ", distribution, "\n",
+             "Please use either \"ubuntu\" or \"centos\"")
+    }
 }
 
