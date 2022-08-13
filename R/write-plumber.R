@@ -52,7 +52,7 @@ vetiver_write_plumber <- function(board, name, version = NULL,
         v <- vetiver_pin_read(board, name)
     }
 
-    load_infra_pkgs <- glue_collapse(glue("library({infra_pkgs})"), sep = "\n")
+    load_infra_pkgs <- glue_collapse(glue("library({plumber_infra_pkgs})"), sep = "\n")
     load_required_pkgs <- glue_required_pkgs(v$metadata$required_pkgs, rsconnect)
 
     board <- rlang::expr_deparse(pins::board_deparse(board))
@@ -83,7 +83,7 @@ vetiver_write_plumber <- function(board, name, version = NULL,
     readr::write_lines(ret, file = file)
 }
 
-infra_pkgs <- c("pins", "plumber", "rapidoc", "vetiver")
+plumber_infra_pkgs <- c("pins", "plumber", "rapidoc", "vetiver")
 
 
 glue_required_pkgs <- function(required_pkgs, rsconnect) {
