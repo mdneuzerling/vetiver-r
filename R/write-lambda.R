@@ -31,7 +31,7 @@ vetiver_write_lambda_runtime <- function(board,
     }
 
     handler <- glue("\n
-        predict <- function(...) {{
+        vetiver_predict <- function(...) {{
             predict(v, as.data.frame(...))
         }}
         ")
@@ -59,7 +59,7 @@ lambdr_infra_pkgs <- c("pins", "lambdr", "vetiver")
 
 vetiver_write_lambda_docker <- function(vetiver_model,
                                         runtime_file = "runtime.R",
-                                        handler = "predict",
+                                        handler = "vetiver_predict",
                                         path = ".",
                                         lockfile = "vetiver_renv.lock",
                                         rspm = TRUE) {
@@ -124,8 +124,8 @@ vetiver_write_lambda_docker <- function(vetiver_model,
         set_cran_mirror,
         rspm_env,
         sys_reqs,
-        copy_renv,
         'RUN Rscript -e "install.packages(\'renv\')"',
+        copy_renv,
         'RUN Rscript -e "renv::restore()"',
         copy_runtime,
         create_bootstrap,
@@ -135,5 +135,5 @@ vetiver_write_lambda_docker <- function(vetiver_model,
     readr::write_lines(ret, file = file.path(path, "Dockerfile"))
 }
 
-lambdr_packages <- c("pins", "vetiver", "renv",
+lambdr_packages <- c("pins", "vetiver", "renv", "paws.storage",
                      "lambdr", "httr", "jsonlite", "logger")
