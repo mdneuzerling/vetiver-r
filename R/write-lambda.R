@@ -54,10 +54,10 @@ vetiver_write_lambda_runtime <- function(board,
     readr::write_lines(ret, file = file)
 }
 
-lambdr_predict <- function(v) {
+lambdr_predict <- function(vetiver_model) {
     function(...) {
-        new_data <- vetiver_type_convert(data.frame(...), v$ptype)
-        predict(v$model, new_data = new_data)
+        req <- list(body = data.frame(...))
+        handler_predict(vetiver_model)(req)
     }
 }
 
